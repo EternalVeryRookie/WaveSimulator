@@ -1,0 +1,12 @@
+#main-canvas {
+    color: aqua;
+    background-color: black;
+}
+
+#app {
+    margin-top: 10vh;
+    height: 70vh;
+    width: 70vh;
+    display: flex;
+    justify-content: flex-start;
+}
