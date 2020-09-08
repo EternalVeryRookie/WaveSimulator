@@ -35,6 +35,13 @@ module.exports = {
                     } 
                 },
             },
+            {
+                test: /\.compute$/,
+                exclude: /(node_modules|bower_components)/,
+                use: {
+                    loader: "raw-loader"
+                },
+            },
         ]
     },
     output: {

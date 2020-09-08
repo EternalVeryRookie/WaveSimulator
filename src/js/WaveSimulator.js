@@ -14,7 +14,7 @@ export default class WaveSimulator extends React.Component {
         const minXY = props.minXY;
         const maxXY = props.maxXY;
         const dx = props.dx, dy = props.dy;
-        const kernelNum = 4;
+        const kernelNum = 5;
         const elapsedTime = 0;
         this.state = {minXY, maxXY, dx, dy, kernelNum, elapsedTime};
         this.__dt = 0.05;
@@ -31,6 +31,7 @@ export default class WaveSimulator extends React.Component {
         const pai = Array(this.state.kernelNum).fill(5.0);
         pai[3] = 7
         const sigma = Array(this.state.kernelNum).fill(1.0);
+        sigma[4] = 6;
         sigma[3] = 15;
         sigma[2] = 5;
         sigma[1] = 10;
@@ -39,7 +40,8 @@ export default class WaveSimulator extends React.Component {
             new THREE.Vector2(0.0, 0.0),
             new THREE.Vector2(this.state.minXY[0]/2, this.state.minXY[1]/2),
             new THREE.Vector2(this.state.maxXY[0]/2, this.state.maxXY[1]/2),
-            new THREE.Vector2(this.state.maxXY[0]/3, this.state.minXY[1]/2),
+            new THREE.Vector2(this.state.maxXY[0]/3, this.state.minXY[1]/4),
+            new THREE.Vector2(this.state.maxXY[0]/3, -this.state.minXY[1]/6),
         ];
         
         const gaussianMix = GaussianMixture(pai, u, sigma);
@@ -95,7 +97,6 @@ export default class WaveSimulator extends React.Component {
         }
 
         this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY)
-        
         requestAnimationFrame( () => this.forwardTime() ); 
     }
 
@@ -117,7 +118,7 @@ export default class WaveSimulator extends React.Component {
         }
 
         this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY)
-        
+
         requestAnimationFrame( () => this.forwardTime() ); 
     }
 

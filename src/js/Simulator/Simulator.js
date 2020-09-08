@@ -1,10 +1,11 @@
-import startSimulation from "./WaveEquationSolver";
+import WaveEquationSolverOnGPU from "./WaveEquationSolverOnGPU";
 
 export default class Simulator {
     constructor(init) {
         this.__IsSimulationing = false;
         this.__InitPoints = init.map((value) => value.map((data) => data));
         this.__NowPoints = init.map((value) => value.map((data) => data));
+        this.__Solver = new WaveEquationSolverOnGPU();
 
         this.Start = this.Start.bind(this);
         this.Step = this.Step.bind(this);
@@ -27,7 +28,7 @@ export default class Simulator {
     }
 
     get NowPoints() {
-        return this.__NowPoints.map((height) => height);
+        return this.__NowPoints;
     }
 
     Start(c, dt, dx, dy) {
@@ -36,20 +37,16 @@ export default class Simulator {
         this.__IsSimulationing = true;
         const initVelocities = this.__InitPoints.map( (row) => row.map((height) => -0.5*height) );
         
-        const {nextStep, nextPoints} = startSimulation(this.__InitPoints, initVelocities, c, dt, dx, dy);
-        this.__NextStep = nextStep;
-        this.__NowPoints = nextPoints;
-
+        this.__NextStep = this.__Solver.start(this.__InitPoints, initVelocities, c, dt, dx, dy);;
+        this.__NowPoints = this.__Solver.NowPoints;
         return true;
     }
 
     Step() {
         if (!this.__IsSimulationing) return;
         
-        
-        const {nextStep, result} = this.__NextStep();
-        this.__NextStep = nextStep;
-        this.__NowPoints = result;
+        this.__NextStep = this.__NextStep();
+        this.__NowPoints = this.__Solver.NowPoints;
     }
 
     Stop() {

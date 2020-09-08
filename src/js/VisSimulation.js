@@ -20,7 +20,7 @@ export default class VisSimulation {
 
         /////////   カメラ初期化   /////////////
         this.camera = new THREE.PerspectiveCamera(45, 1);
-        this.camera.position.set(25,25,0);
+        this.camera.position.set(60,65,0);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
         /////////  シーン初期化  //////////
