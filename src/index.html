@@ -10,61 +10,7 @@
         <div id="app">
         </div>
 
-        <script type="x-shader/x-compute" id="compute-shader">#version 310 es
-            layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-
-            layout (std430, binding = 0) buffer SSBO {
-                float data[];
-            } nowPoints;
-
-            layout (std430, binding = 1) buffer SSBO1 {
-                float data[];
-            } prePoints;
-
-            layout (std430, binding = 2) buffer SSBO3 {
-                float data[];
-            } params;
-
-
-            float solve(uint x, uint y, float dt, float c, float dx, float dy) {
-                uint index = x + y * gl_NumWorkGroups.x;
-                float preZ = prePoints.data[index];
-                float cSquare = c * c;
-                float dtSquare = dt * dt;
-                float dxSquare = dx * dx;
-                float dySquare = dy * dy;
-                uint leftxIdx = x-uint(1) + y * gl_NumWorkGroups.x;
-                uint rightxIdx = (x+uint(1)) + y * gl_NumWorkGroups.x;
-                uint upyIdx = x + (y-uint(1)) * gl_NumWorkGroups.x;
-                uint downyIdx = x + (y+uint(1)) * gl_NumWorkGroups.x;
-            
-                float i = cSquare * (dtSquare / dxSquare) * (nowPoints.data[rightxIdx] + nowPoints.data[leftxIdx] - 2.0 * nowPoints.data[index]);
-                float j = cSquare * (dtSquare / dySquare) * (nowPoints.data[downyIdx] + nowPoints.data[upyIdx] - 2.0 * nowPoints.data[index]);
-                float k = 2.0 * nowPoints.data[index] - preZ;
-            
-                return i + j + k;
-            }
-
-            void main() {
-                uint x = gl_WorkGroupID.x;
-                uint y = gl_WorkGroupID.y;
-                uint index = x + y * gl_NumWorkGroups.x;
-                float c = params.data[0];
-                float dt = params.data[1];
-                float dx = params.data[2];
-                float dy = params.data[3];
-
-                // 固定端
-                if (x==uint(0) || y==uint(0))
-                    prePoints.data[index] = nowPoints.data[index];
-                else if(y==(gl_NumWorkGroups.y-uint(1)) || x==(gl_NumWorkGroups.x-uint(1)))
-                    prePoints.data[index] = nowPoints.data[index];
-                else
-                    prePoints.data[index] = solve(x, y, dt, c, dx, dy);               
-                
-                //writeBuffer.data[x + y * gl_NumWorkGroups.x] = float(gl_WorkGroupID.x);               
-            }
-
+        <script type="x-shader/x-compute" id="compute-shader">
         </script>
 
         <script src="client.js"></script>

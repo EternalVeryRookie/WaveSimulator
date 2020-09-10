@@ -34,6 +34,9 @@ float solve(uint x, uint y, float dt, float c, float dx, float dy) {
 }
 
 void main() {
+    // 時刻t-1 の時点での高さ情報を記憶しているバッファに計算結果を格納する。
+    // 時刻t の時点での高さ情報はt+1 を計算する際に周辺情報が必要になるため時刻t のバッファには計算結果を保存できない。
+
     uint x = gl_WorkGroupID.x;
     uint y = gl_WorkGroupID.y;
     uint index = x + y * gl_NumWorkGroups.x;

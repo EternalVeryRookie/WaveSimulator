@@ -6,7 +6,6 @@ export default class VisSimulation {
     }
 
     init(canvasId) {
-        console.log("WebGL renderer init");
         const canvas = document.getElementById(canvasId);
         const height = canvas.clientHeight;
         const width = canvas.clientWidth;
@@ -30,7 +29,6 @@ export default class VisSimulation {
 
         this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
         this.scene.add(this.mesh);
-        //////////////////////////////////
     }
 
     set camPos(pos) {
@@ -55,7 +53,6 @@ export default class VisSimulation {
     }
 
     setFaceIndex(resoX, resoY, geometry) {
-        console.log("update face index");
         const face = [];
         for (let y = 0; y < resoY-1; y++)
         for (let x = 0; x < resoX-1; x++) {

@@ -6,21 +6,22 @@ export default class Simulator {
         this.__InitPoints = init.map((value) => value.map((data) => data));
         this.__NowPoints = init.map((value) => value.map((data) => data));
         this.__Solver = new WaveEquationSolverOnGPU();
+        this.__NextStep = null;
 
-        this.Start = this.Start.bind(this);
-        this.Step = this.Step.bind(this);
-        this.Stop = this.Stop.bind(this);
-        this.Reset = this.Reset.bind(this);
-    }
-
-    get InitPoints() {
-        return this.__InitPoints;
+        this.start = this.start.bind(this);
+        this.step = this.step.bind(this);
+        this.stop = this.stop.bind(this);
+        this.reset = this.reset.bind(this);
     }
 
     set InitPoints(points) {
         if (this.__IsSimulationing) return;
 
         this.__InitPoints = points;
+    }
+
+    get InitPoints() {
+        return this.__InitPoints;
     }
 
     get IsSimulationing() {
@@ -31,30 +32,47 @@ export default class Simulator {
         return this.__NowPoints;
     }
 
-    Start(c, dt, dx, dy) {
+    start(c, dt, dx, dy) {
         if (this.__IsSimulationing) return false;
 
         this.__IsSimulationing = true;
-        const initVelocities = this.__InitPoints.map( (row) => row.map((height) => -0.5*height) );
+        const initVelocities = this.__InitPoints.map( (row) => row.map((height) => 0.5*height) );
         
         this.__NextStep = this.__Solver.start(this.__InitPoints, initVelocities, c, dt, dx, dy);;
         this.__NowPoints = this.__Solver.NowPoints;
+
         return true;
     }
 
-    Step() {
-        if (!this.__IsSimulationing) return;
+    step() {
+        if (!this.__IsSimulationing) return false;
         
         this.__NextStep = this.__NextStep();
         this.__NowPoints = this.__Solver.NowPoints;
+
+        return true;
     }
 
-    Stop() {
+    restart() {
+        if (this.__NextStep === null || this.__IsSimulationing) return false;
+
+        this.__IsSimulationing = true;
+        this.__NextStep = this.__NextStep();
+        this.__NowPoints = this.__Solver.NowPoints;
+    
+        return true;
+    }
+
+    stop() {
         this.__IsSimulationing = false;
     }
 
-    Reset() {
-        if (this.__IsSimulationing) return;
+    reset() {
+        if (this.__IsSimulationing) return false;
+
         this.__NowPoints = this.__InitPoints;
+        this.__NextStep = null;
+
+        return true;
     }
 }

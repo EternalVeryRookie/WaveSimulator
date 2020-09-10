@@ -16,7 +16,8 @@ export default class WaveSimulator extends React.Component {
         const dx = props.dx, dy = props.dy;
         const kernelNum = 5;
         const elapsedTime = 0;
-        this.state = {minXY, maxXY, dx, dy, kernelNum, elapsedTime};
+        const isPause = false;
+        this.state = {minXY, maxXY, dx, dy, kernelNum, elapsedTime, isPause};
         this.__dt = 0.05;
         
         this.__bindFunctions();
@@ -24,7 +25,7 @@ export default class WaveSimulator extends React.Component {
 
     ////////////////////  初期化系関数  ////////////////////////////
 
-    // DOMがマウントされてから呼び出す必要がある。constructorの中で呼び出すのはおそらくNG。
+    // DOMがマウントされてから呼び出す必要がある。
     __initSimulation() {
         
         // 混合ガウス生成、サンプリング、Visualiserに点群をセット
@@ -69,9 +70,9 @@ export default class WaveSimulator extends React.Component {
 
     __bindFunctions() {
         this.forwardTime = this.forwardTime.bind(this);
-        this.handleStartSimulation = this.handleStartSimulation.bind(this);
-        this.handleStopSimulation = this.handleStopSimulation.bind(this);
-        this.handleResetSimulation = this.handleResetSimulation.bind(this);
+        this.handleStart = this.handleStart.bind(this);
+        this.handleStop = this.handleStop.bind(this);
+        this.handleReset = this.handleReset.bind(this);
         this.componentDidMount = this.componentDidMount.bind(this);
     }
     //////////////////////////////////////////////////////////////
@@ -84,7 +85,9 @@ export default class WaveSimulator extends React.Component {
     ////////////////////////////////////////////////////////////////////////////
 
     forwardTime() {
-        this.__Simulator.Step();
+        if (!this.__Simulator.IsSimulationing) return;
+
+        this.__Simulator.step();
         const nowPoints = this.__Simulator.NowPoints;
         const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
         for (let y = 0; y < this.__resoY; y++)
@@ -97,13 +100,19 @@ export default class WaveSimulator extends React.Component {
         }
 
         this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY)
-        requestAnimationFrame( () => this.forwardTime() ); 
+        requestAnimationFrame( this.forwardTime ); 
     }
 
     ///////////////  イベントハンドラ  ////////////////////
-    handleStartSimulation() {
-        const isStarting = this.__Simulator.Start(1.0, this.__dt, this.state.dx, this.state.dy);
-        if (!isStarting) return;
+    handleStart() {
+        if (this.state.isPause)
+            this.__Simulator.restart()
+        else {
+            const isStarting = this.__Simulator.start(1.0, this.__dt, this.state.dx, this.state.dy);
+            if (!isStarting) return;
+        }
+
+        this.setState({isPause: false});
 
         const nowPoints = this.__Simulator.NowPoints;
         // シミュレーターは高さ情報しかもっていないため、レンダリング用にxy情報を生成する
@@ -117,17 +126,32 @@ export default class WaveSimulator extends React.Component {
             vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy);
         }
 
-        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY)
-
-        requestAnimationFrame( () => this.forwardTime() ); 
+        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
+        requestAnimationFrame( this.forwardTime ); 
     }
 
-    handleStopSimulation() {
-        this.__Simulator.Stop();
+    handleStop() {
+        this.__Simulator.stop();
+        this.setState({isPause: true});
     }
 
-    handleResetSimulation() {
-        this.__Simulator.Reset();
+    handleReset() {
+        if (!this.__Simulator.reset()) return;
+
+        this.setState({isPause: false});
+
+        const nowPoints = this.__Simulator.NowPoints;
+        // シミュレーターは高さ情報しかもっていないため、レンダリング用にxy情報を生成する
+        const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
+        for (let y = 0; y < this.__resoY; y++)
+        for (let x = 0; x < this.__resoX; x++) {
+            const vectorsIdx = x * 3 + y * 3 * this.__resoX;
+            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx);
+            vectors[1 + vectorsIdx] = (nowPoints[y][x]); //高さはy座標に相当することに注意（zではない）
+            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy);
+        }
+
+        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
     }
     //////////////////////////////////////////////////////
 
@@ -136,10 +160,10 @@ export default class WaveSimulator extends React.Component {
             this.__VisSimulation.render();
 
         return (
-            <React.Fragment>
+            <div className="main-frame">
                 <canvas id="main-canvas"/>
-                <UI startSimulation={this.handleStartSimulation} stopSimulation={this.stopSimulation} resetSimulation={this.resetSimulation}/>
-            </React.Fragment>
+                <UI start={this.handleStart} stop={this.handleStop} reset={this.handleReset}/>
+            </div>
         )
     }
 }
