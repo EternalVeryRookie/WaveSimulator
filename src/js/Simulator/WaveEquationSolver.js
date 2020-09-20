@@ -27,7 +27,7 @@ function getLocalHeights(points, x, y) {
                             [points[y-1][x-1], points[y-1][x], points[y-1][x+1]], 
                             [points[y][x-1]  , points[y][x]  , points[y][x+1]  ],
                             [points[y+1][x-1], points[y+1][x], points[y+1][x+1]]
-                         ]
+                         ];
     
     return localHeights;
 }

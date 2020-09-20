@@ -10,7 +10,7 @@ export default class Simulator {
 
         this.start = this.start.bind(this);
         this.step = this.step.bind(this);
-        this.stop = this.stop.bind(this);
+        this.stop = this.pause.bind(this);
         this.reset = this.reset.bind(this);
     }
 
@@ -63,7 +63,7 @@ export default class Simulator {
         return true;
     }
 
-    stop() {
+    pause() {
         this.__IsSimulationing = false;
     }
 

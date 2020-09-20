@@ -9,13 +9,13 @@ export default class WaveEquationSolverOnGPU {
         this.__ComputeShader.createBuffer("prePoints", 1);
         this.__ComputeShader.createBuffer("params", 2);
 
-        this.setParams = this.setParams.bind(this);
+        this.setParams = this.__setParams.bind(this);
         this.__setPoints = this.__setPoints.bind(this);
         this.start = this.start.bind(this);
         this.__step = this.__step.bind(this);
     }
 
-    setParams(c, dt, dx, dy) {
+    __setParams(c, dt, dx, dy) {
         const params = new Float32Array(4);
         params[0] = c;
         params[1] = dt;
@@ -36,7 +36,7 @@ export default class WaveEquationSolverOnGPU {
 
     //initPointsとinitPointVelocitiesは二次元配列
     start(initPoints, initPointVelocities, c, dt, dx, dy) {
-        this.setParams(c, dt, dx, dy);
+        this.__setParams(c, dt, dx, dy);
         const nextPoints = startSimulation(initPoints, initPointVelocities, c, dt, dx, dy);
         const initPoints1D = initPoints.reduce( (pre, current) => { pre.push(...current); return pre; },[] );
         const initPointsFloatArray = new Float32Array(initPoints1D);

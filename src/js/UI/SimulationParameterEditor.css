@@ -1,0 +1,25 @@
+.main-frame {
+    width: 100%;
+    height: 100%;
+}
+
+.parameter-sliders{
+    table-layout: fixed;
+    width: 100%;
+}
+.simulation-parameter-frame {
+    display: flex;
+}
+
+.parameter-name-label {
+    text-align: left;
+    width: 3em;
+}
+
+.parameter-sliders-th {
+    text-align: left;
+}
+
+.parameter-slider {
+    width: 100%;
+}

@@ -1,24 +1,32 @@
-import UI from "./UI/UI";
+import SimulationController from "./UI/SimulationController";
+import SimulationParameterEditor from "./UI/SimulationParameterEditor";
 import Simulator from "./Simulator/Simulator";
 import VisSimulation from "./VisSimulation"
 import GaussianMixture from "./Functions/GaussianMixture";
 import Sampling from "./Sampler/Sampler";
+import Parameter from "./lib/Parameter";
 
 import React from "react";
 import * as THREE from "./lib/three.module";
 
+import style from "./WaveSimulator.css";
 
 export default class WaveSimulator extends React.Component {
     constructor(props) {
         super(props);
         const minXY = props.minXY;
         const maxXY = props.maxXY;
-        const dx = props.dx, dy = props.dy;
-        const kernelNum = 5;
+        const dx = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
+        const dy = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
         const elapsedTime = 0;
         const isPause = false;
-        this.state = {minXY, maxXY, dx, dy, kernelNum, elapsedTime, isPause};
-        this.__dt = 0.05;
+        const dt = new Parameter(0.01, 0.001, 0.1);
+        const c = new Parameter(1.0, 0.00001, 30);
+        this.state = {minXY, maxXY, c, dt, dx, dy, elapsedTime, isPause};
+        this.__mainCanvasRef = React.createRef();
+        this.__simulationFrameRef = React.createRef();
+        this.__Simulator = new Simulator([[]]);
+        this.__initSimulation();
         
         this.__bindFunctions();
     }
@@ -27,16 +35,15 @@ export default class WaveSimulator extends React.Component {
 
     // DOMがマウントされてから呼び出す必要がある。
     __initSimulation() {
-        
         // 混合ガウス生成、サンプリング、Visualiserに点群をセット
-        const pai = Array(this.state.kernelNum).fill(5.0);
+        const pai = Array(5).fill(5.0);
         pai[3] = 7
-        const sigma = Array(this.state.kernelNum).fill(1.0);
+        const sigma = Array(5).fill(1.0);
         sigma[4] = 6;
         sigma[3] = 15;
         sigma[2] = 5;
         sigma[1] = 10;
-        //const u = Array(this.state.kernelNum).fill(new THREE.Vector2(0.0, 0.0));
+
         const u = [ 
             new THREE.Vector2(0.0, 0.0),
             new THREE.Vector2(this.state.minXY[0]/2, this.state.minXY[1]/2),
@@ -46,74 +53,75 @@ export default class WaveSimulator extends React.Component {
         ];
         
         const gaussianMix = GaussianMixture(pai, u, sigma);
-        
-        const points = Sampling(gaussianMix, this.state.minXY, this.state.maxXY, this.state.dx, this.state.dy);
+        this.state.initCondition = gaussianMix;
+        this.__setInitConditionPoints();
+    }
+
+    __initVisualiser() {
+        this.__VisSimulation = new VisSimulation(this.__mainCanvasRef);
+        this.__setInitConditionPoints();
+    }
+
+    __bindFunctions() {
+        this.forwardTime = this.forwardTime.bind(this);
+        this.handleStart = this.handleStart.bind(this);
+        this.handlePause = this.handlePause.bind(this);
+        this.handleReset = this.handleReset.bind(this);
+        this.componentDidMount = this.componentDidMount.bind(this);
+        this.onChangeC = this.onChangeC.bind(this);
+        this.onChangeDt = this.onChangeDt.bind(this);
+        this.onChangeDx = this.onChangeDx.bind(this);
+        this.onChangeDy = this.onChangeDy.bind(this);
+        this.__adjustCanvasAspect = this.__adjustCanvasAspect.bind(this);
+        this.__setInitConditionPoints = this.__setInitConditionPoints.bind(this);
+        this.__updatePoints = this.__updatePoints.bind(this);
+        this.__initVisualiser = this.__initVisualiser.bind(this);
+    }
+    //////////////////////////////////////////////////////////////
+
+    __setInitConditionPoints() {
+        //this.__VisSimulationにインスタンスをセットする前に呼んではいけない
+        if (this.__Simulator !== undefined && this.__Simulator.IsSimulationing) return false;
+
+        const points = Sampling(this.state.initCondition, this.state.minXY, this.state.maxXY, this.state.dx.value, this.state.dy.value);
         this.__resoX = points[0].length;
         this.__resoY = points.length;
 
-        this.__Simulator = new Simulator(points);
-
-        this.__VisSimulation = new VisSimulation("main-canvas");
+        this.__Simulator.InitPoints = points;
 
         const pointsArray = new Float32Array(points.length * points[0].length * 3);
         for (let y = 0; y < this.__resoY; y++)
         for (let x = 0; x < this.__resoX; x++)
         {
             const idx = x * 3 + y * 3 * this.__resoX;
-            pointsArray[0 + idx] = this.state.minXY[0] + this.state.dx*x;
+            pointsArray[0 + idx] = this.state.minXY[0] + this.state.dx.value*x;
             pointsArray[1 + idx] = points[y][x];
-            pointsArray[2 + idx] = this.state.minXY[1] + this.state.dy*y;
+            pointsArray[2 + idx] = this.state.minXY[1] + this.state.dy.value*y;
         }
 
-        this.__VisSimulation.setVertices(pointsArray, this.__resoX, this.__resoY);
+        if (this.__VisSimulation)   
+            this.__VisSimulation.setVertices(pointsArray, this.__resoX, this.__resoY);
     }
 
-    __bindFunctions() {
-        this.forwardTime = this.forwardTime.bind(this);
-        this.handleStart = this.handleStart.bind(this);
-        this.handleStop = this.handleStop.bind(this);
-        this.handleReset = this.handleReset.bind(this);
-        this.componentDidMount = this.componentDidMount.bind(this);
+    __adjustCanvasAspect(){
+        const canvas = this.__mainCanvasRef.current;
+        const frame = this.__simulationFrameRef.current;
+        const canvasSize = frame.clientWidth > frame.clientHeight ? frame.clientWidth : frame.clientHeight;
+        canvas.width = canvas.height = canvasSize;
+        this.__VisSimulation.setRenderCanvasSize(canvas.width, canvas.height);
     }
-    //////////////////////////////////////////////////////////////
 
     /////////////////////  ライフサイクルメソッド  /////////////////////////////
     componentDidMount() {
-        this.__initSimulation();
+        this.__initVisualiser();
+        this.__adjustCanvasAspect();
+        window.addEventListener("resize", this.__adjustCanvasAspect);
         this.__VisSimulation.render();
     }
+
     ////////////////////////////////////////////////////////////////////////////
 
-    forwardTime() {
-        if (!this.__Simulator.IsSimulationing) return;
-
-        this.__Simulator.step();
-        const nowPoints = this.__Simulator.NowPoints;
-        const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
-        for (let y = 0; y < this.__resoY; y++)
-        for (let x = 0; x < this.__resoX; x++) {
-            const index = x + y * this.__resoX;
-            const vectorsIdx = x * 3 + y * 3 * this.__resoX;
-            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx);
-            vectors[1 + vectorsIdx] = (nowPoints[index]);
-            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy);
-        }
-
-        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY)
-        requestAnimationFrame( this.forwardTime ); 
-    }
-
-    ///////////////  イベントハンドラ  ////////////////////
-    handleStart() {
-        if (this.state.isPause)
-            this.__Simulator.restart()
-        else {
-            const isStarting = this.__Simulator.start(1.0, this.__dt, this.state.dx, this.state.dy);
-            if (!isStarting) return;
-        }
-
-        this.setState({isPause: false});
-
+    __updatePoints() {
         const nowPoints = this.__Simulator.NowPoints;
         // シミュレーターは高さ情報しかもっていないため、レンダリング用にxy情報を生成する
         const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
@@ -121,48 +129,105 @@ export default class WaveSimulator extends React.Component {
         for (let x = 0; x < this.__resoX; x++) {
             const index = x + y * this.__resoX;
             const vectorsIdx = x * 3 + y * 3 * this.__resoX;
-            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx);
+            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx.value);
             vectors[1 + vectorsIdx] = (nowPoints[index]); //高さはy座標に相当することに注意（zではない）
-            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy);
+            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy.value);
         }
 
         this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
-        requestAnimationFrame( this.forwardTime ); 
     }
 
-    handleStop() {
-        this.__Simulator.stop();
+    forwardTime() {
+        if (!this.__Simulator.IsSimulationing) return;
+
+        this.__Simulator.step();
+        this.__updatePoints();
+        this.setState({elapsedTime: this.state.elapsedTime+this.state.dt.value});
+
+        requestAnimationFrame(this.forwardTime); 
+    }
+
+    ///////////////  イベントハンドラ  ////////////////////
+    handleStart() {
+        const isStarting = this.state.isPause ? this.__Simulator.restart() : this.__Simulator.start(this.state.c.value, this.state.dt.value, this.state.dx.value, this.state.dy.value);
+        if (!isStarting) return;
+
+        this.__updatePoints();
+        this.setState({isPause: false, elapsedTime: this.state.elapsedTime+this.state.dt.value});
+
+        requestAnimationFrame(this.forwardTime); 
+    }
+
+    handlePause() {
+        this.__Simulator.pause();
         this.setState({isPause: true});
     }
 
     handleReset() {
         if (!this.__Simulator.reset()) return;
 
-        this.setState({isPause: false});
+        this.setState({isPause: false, elapsedTime: 0});
+        this.__setInitConditionPoints();
+    }
 
-        const nowPoints = this.__Simulator.NowPoints;
-        // シミュレーターは高さ情報しかもっていないため、レンダリング用にxy情報を生成する
-        const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
-        for (let y = 0; y < this.__resoY; y++)
-        for (let x = 0; x < this.__resoX; x++) {
-            const vectorsIdx = x * 3 + y * 3 * this.__resoX;
-            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx);
-            vectors[1 + vectorsIdx] = (nowPoints[y][x]); //高さはy座標に相当することに注意（zではない）
-            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy);
-        }
+    onChangeC(evt) {
+        const c = this.state.c;
+        c.value = Number(evt.target.value);
+        this.setState({c: c});
+    }
 
-        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
+    onChangeDt(evt) {
+        const dt = this.state.dt;
+        dt.value = Number(evt.target.value);
+        this.setState({dt: dt});
+    }
+
+    onChangeDx(evt) {
+        const dx = this.state.dx;
+        dx.value = Number(evt.target.value);
+        this.setState({dx: dx});
+        this.__setInitConditionPoints();
+    }
+
+    onChangeDy(evt) {
+        const dy = this.state.dy;
+        dy.value = Number(evt.target.value);
+        this.setState({dy: dy});
+        this.__setInitConditionPoints();
     }
     //////////////////////////////////////////////////////
 
+    get isAcceptParamChange() {
+        return this.state.isPause || this.__Simulator.IsSimulationing;
+    }
+
     render() {
-        if (this.__VisSimulation)
+        if (this.__VisSimulation) {
             this.__VisSimulation.render();
+        }
 
         return (
-            <div className="main-frame">
-                <canvas id="main-canvas"/>
-                <UI start={this.handleStart} stop={this.handleStop} reset={this.handleReset}/>
+            <div className="main-frame" ref={this.__simulationFrameRef}>
+                <p>{this.state.elapsedTime}</p>
+                <div className="simulation-frame">
+                    <canvas id="main-canvas" ref={this.__mainCanvasRef}/>
+                    <SimulationController start={this.handleStart} pause={this.handlePause} reset={this.handleReset}/>
+                    <SimulationParameterEditor 
+                        dx={this.state.dx} 
+                        dy={this.state.dy} 
+                        dt={this.state.dt} 
+                        c={this.state.c} 
+                        onChangeC ={this.onChangeC}
+                        onChangeDt={this.onChangeDt}
+                        onChangeDx={this.onChangeDx}
+                        onChangeDy={this.onChangeDy}
+                        disabled={this.isAcceptParamChange}
+                    />
+                </div>
+
+                <div className="init-condition-frame">
+
+                </div>
             </div>
         )
     }
