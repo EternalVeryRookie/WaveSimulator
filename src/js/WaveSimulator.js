@@ -33,9 +33,8 @@ export default class WaveSimulator extends React.Component {
 
     ////////////////////  初期化系関数  ////////////////////////////
 
-    // DOMがマウントされてから呼び出す必要がある。
     __initSimulation() {
-        // 混合ガウス生成、サンプリング、Visualiserに点群をセット
+        // 混合ガウス生成、サンプリング
         const pai = Array(5).fill(5.0);
         pai[3] = 7
         const sigma = Array(5).fill(1.0);
@@ -80,7 +79,6 @@ export default class WaveSimulator extends React.Component {
     //////////////////////////////////////////////////////////////
 
     __setInitConditionPoints() {
-        //this.__VisSimulationにインスタンスをセットする前に呼んではいけない
         if (this.__Simulator !== undefined && this.__Simulator.IsSimulationing) return false;
 
         const points = Sampling(this.state.initCondition, this.state.minXY, this.state.maxXY, this.state.dx.value, this.state.dy.value);
@@ -118,7 +116,6 @@ export default class WaveSimulator extends React.Component {
         window.addEventListener("resize", this.__adjustCanvasAspect);
         this.__VisSimulation.render();
     }
-
     ////////////////////////////////////////////////////////////////////////////
 
     __updatePoints() {

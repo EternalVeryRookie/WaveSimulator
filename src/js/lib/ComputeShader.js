@@ -42,6 +42,9 @@ class ShaderStorageBuffer{
 export default class ComputeShader {
     constructor(shaderSource) {
         this.OffscreenCtx = new OffscreenCanvas(1, 1).getContext("webgl2-compute");
+        if (!this.OffscreenCtx)
+            alert("webgl2-compute unsupported");    
+
         this.__Buffers = new Map();
         this.__ShaderProgram = initShader(this.OffscreenCtx, shaderSource);
     }
