@@ -46,7 +46,7 @@ export default class WaveEquationSolverOnGPU {
     }
 
     __step(resoX, resoY) {
-        this.__ComputeShader.dispatch(resoX, resoY, 1);
+        this.__ComputeShader.dispatch(resoX-2, resoY-2, 1);
 
         const result = new Float32Array(this.__PointsLength);
         this.__ComputeShader.readDataFromGPU(result, "prePoints");
