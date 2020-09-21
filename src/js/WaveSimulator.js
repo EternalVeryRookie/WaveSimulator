@@ -11,6 +11,7 @@ import * as THREE from "./lib/three.module";
 
 import style from "./WaveSimulator.css";
 
+//To Do stateを末端のコンポーネントに移動する
 export default class WaveSimulator extends React.Component {
     constructor(props) {
         super(props);
