@@ -1,43 +1,75 @@
 import * as THREE from "./lib/three.module";
+import React, {useState, useEffect, useRef} from "react";
 
-export default class VisSimulation {
-    constructor(canvasRef) {
-        this.__canvas = canvasRef.current;
-        this.__WEBGL_lose_context = this.__canvas.getContext("webgl").getExtension('WEBGL_lose_context');
-        
-        this.render = this.render.bind(this);
-        this.__restoreContext = this.__restoreContext.bind(this);
-        this.__canvas.addEventListener("webglcontextrestored", this.render, false);
-        this.__canvas.addEventListener("webglcontextlost", this.__restoreContext, false);
-        
-        this.init();
+
+function Cavnas(props) {
+    const [renderer, setRenderer] = useState(null);
+    const ref = useRef(null);
+
+    const adjustCanvasAspect = (renderer) => {
+        if (!renderer) return;
+        const setRenderCanvasSize = (width, height) => {
+            renderer.setSize(width, height);
+            props.setCameraAspect(width, height);
+            setRenderer(renderer);
+        };
+
+        const canvas = ref.current;
+        const frame = props.simulationFrameRef.current;
+        const canvasSize = frame.clientWidth > frame.clientHeight ? frame.clientWidth : frame.clientHeight;
+        canvas.width = canvas.height = canvasSize;
+        setRenderCanvasSize(canvas.width, canvas.height);
     }
+    window.addEventListener("resize", () => adjustCanvasAspect(renderer));
 
-    __restoreContext() {
-        if (this.__canvas.getContext("webgl").isContextLost()) {
-            this.__WEBGL_lose_context.restoreContext();
+    const restoreContext = (WEBGL_lose_context) => {
+        if (ref.current.getContext("webgl").isContextLost()) {
+            WEBGL_lose_context.restoreContext();
             //1回restoreを呼び出しただけでは復帰しない場合があるため、復帰するまで複数回呼び出す
-            setInterval(this.__restoreContext, 10);
+            setInterval(restoreContext, 10);
         }
     }
 
-    initRenderer() {
-        const height = this.__canvas.clientHeight;
-        const width = this.__canvas.clientWidth;
+    const initRenderer = () => {
+        const height = ref.current.clientHeight;
+        const width = ref.current.clientWidth;
 
-        this.__renderer = new THREE.WebGLRenderer({canvas: this.__canvas});
-        this.__renderer.setPixelRatio(window.devicePixelRatio);
-        this.__renderer.setSize(width, height);
-        this.__renderer.setClearColor(0xdddddd);
+        const WEBGL_lose_context = ref.current.getContext("webgl").getExtension("WEBGL_lose_context");
+        ref.current.addEventListener("webglcontextlost", () => restoreContext(WEBGL_lose_context), false);    
+    
+        const renderer = new THREE.WebGLRenderer({canvas: ref.current});
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+        renderer.setClearColor(0xdddddd);
+        ref.current.addEventListener("webglcontextrestored", () => setRenderer(renderer), false);
+        adjustCanvasAspect(renderer);
+    }
+
+    useEffect(initRenderer, [setRenderer]); //canvasがマウントされた直後でのみ呼び出したい
+
+    if (renderer) renderer.render(props.scene, props.camera);
+
+    return <canvas id="main-canvas" ref={ref}/>
+}
+
+
+
+export default class SimulationScene {
+    constructor(canvasContainerRef) {
+        this.__canvasContainerRef = canvasContainerRef;
+
+        this.init = this.init.bind(this);
+        this.setVertices = this.setVertices.bind(this);
+        this.setFaceIndex = this.setFaceIndex.bind(this);
+        this.setCameraAspect = this.setCameraAspect.bind(this);
+        this.render = this.render.bind(this);
+
+        this.init();
     }
 
     init() {
-        this.initRenderer();
-        const height = this.__canvas.clientHeight;
-        const width = this.__canvas.clientWidth;
-
         /////////   カメラ初期化   /////////////
-        this.camera = new THREE.PerspectiveCamera(45, width/height);
+        this.camera = new THREE.PerspectiveCamera(45);
         this.camera.position.set(60,65,0);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -45,19 +77,8 @@ export default class VisSimulation {
         this.scene = new THREE.Scene();
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([]), 3));
-
         this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
         this.scene.add(this.mesh);
-    }
-
-    setRenderCanvasSize(width, height) {
-        this.__renderer.setSize(width, height);
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
-    }
-
-    set camPos(pos) {
-        this.camera.position.set(pos.x, pos.y, pos.z);
     }
 
     setVertices(verts, resoX, resoY) {
@@ -81,6 +102,11 @@ export default class VisSimulation {
         }
     }
 
+    setCameraAspect(width, height) {
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+    }
+
     setFaceIndex(resoX, resoY, geometry) {
         const face = [];
         for (let y = 0; y < resoY-1; y++)
@@ -99,6 +125,6 @@ export default class VisSimulation {
     }    
 
     render() {
-        this.__renderer.render(this.scene, this.camera);
+        return <Cavnas scene={this.scene} camera={this.camera} setCameraAspect={this.setCameraAspect} simulationFrameRef={this.__canvasContainerRef}/>
     }
 }

@@ -1,7 +1,7 @@
 import SimulationController from "./UI/SimulationController";
 import SliderTable from "./UI/SimulationParameterEditor";
 import Simulator from "./Simulator/Simulator";
-import VisSimulation from "./VisSimulation"
+import SimulationScene from "./VisSimulation"
 import GaussianMixture from "./Functions/GaussianMixture";
 import Sampling from "./Sampler/Sampler";
 import Parameter from "./lib/Parameter";
@@ -35,6 +35,7 @@ export default class WaveSimulator extends React.Component {
         this.__mainCanvasRef = React.createRef();
         this.__simulationFrameRef = React.createRef();
         this.__Simulator = new Simulator([[]]);
+        this.SimulationScene = new SimulationScene(this.__simulationFrameRef);
         
         this.__initSimulation();
     }
@@ -64,30 +65,22 @@ export default class WaveSimulator extends React.Component {
         this.__setInitConditionPoints();
     }
 
-    __initVisualiser() {
-        this.__VisSimulation = new VisSimulation(this.__mainCanvasRef);
-        this.__setInitConditionPoints();
-    }
-
     __bindFunctions() {
         this.forwardTime = this.forwardTime.bind(this);
         this.handleStart = this.handleStart.bind(this);
         this.handlePause = this.handlePause.bind(this);
         this.handleReset = this.handleReset.bind(this);
-        this.componentDidMount = this.componentDidMount.bind(this);
         this.onChangeC = this.onChangeC.bind(this);
         this.onChangeDt = this.onChangeDt.bind(this);
         this.onChangeDx = this.onChangeDx.bind(this);
         this.onChangeDy = this.onChangeDy.bind(this);
-        this.__adjustCanvasAspect = this.__adjustCanvasAspect.bind(this);
         this.__setInitConditionPoints = this.__setInitConditionPoints.bind(this);
         this.__updatePoints = this.__updatePoints.bind(this);
-        this.__initVisualiser = this.__initVisualiser.bind(this);
     }
     //////////////////////////////////////////////////////////////
 
     __setInitConditionPoints() {
-        if (this.__Simulator !== undefined && this.__Simulator.IsSimulationing) return false;
+        if (this.__Simulator.IsSimulationing) return false;
 
         const points = Sampling(this.state.initCondition, this.state.minXY, this.state.maxXY, this.__dx.value, this.__dy.value);
         this.__resoX = points[0].length;
@@ -105,26 +98,8 @@ export default class WaveSimulator extends React.Component {
             pointsArray[2 + idx] = this.state.minXY[1] + this.__dy.value*y;
         }
 
-        if (this.__VisSimulation)   
-            this.__VisSimulation.setVertices(pointsArray, this.__resoX, this.__resoY);
+        this.SimulationScene.setVertices(pointsArray, this.__resoX, this.__resoY);
     }
-
-    __adjustCanvasAspect(){
-        const canvas = this.__mainCanvasRef.current;
-        const frame = this.__simulationFrameRef.current;
-        const canvasSize = frame.clientWidth > frame.clientHeight ? frame.clientWidth : frame.clientHeight;
-        canvas.width = canvas.height = canvasSize;
-        this.__VisSimulation.setRenderCanvasSize(canvas.width, canvas.height);
-    }
-
-    /////////////////////  ライフサイクルメソッド  /////////////////////////////
-    componentDidMount() {
-        this.__initVisualiser();
-        this.__adjustCanvasAspect();
-        window.addEventListener("resize", this.__adjustCanvasAspect);
-        this.__VisSimulation.render();
-    }
-    ////////////////////////////////////////////////////////////////////////////
 
     __updatePoints() {
         const nowPoints = this.__Simulator.NowPoints;
@@ -139,7 +114,7 @@ export default class WaveSimulator extends React.Component {
             vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.__dy.value);
         }
 
-        this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
+        this.SimulationScene.setVertices(vectors, this.__resoX, this.__resoY);
     }
 
     forwardTime() {
@@ -199,15 +174,11 @@ export default class WaveSimulator extends React.Component {
     }
 
     render() {
-        if (this.__VisSimulation) {
-            this.__VisSimulation.render();
-        }
-
         return (
             <div className="main-frame" ref={this.__simulationFrameRef}>
                 <p>{this.state.elapsedTime}</p>
                 <div className="simulation-frame">
-                    <canvas id="main-canvas" ref={this.__mainCanvasRef}/>
+                    {this.SimulationScene.render()}
                     <SimulationController start={this.handleStart} pause={this.handlePause} reset={this.handleReset}/>
                     <SliderTable disabled={this.isRejectParamChange} c={this.__c} dt={this.__dt} dx={this.__dx} dy={this.__dy}/>
                 </div>
