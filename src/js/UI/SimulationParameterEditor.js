@@ -1,26 +1,51 @@
-import React from "react";
-import style from "./SimulationParameterEditor.css";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
+import Parameter from "../lib/Parameter";
 
-export default function SimulationParameterEditor(props) {
+import "./SimulationParameterEditor.css";
+
+export default function SliderTable(props) {
+    return (
+        <SimulationParameterEditor>
+            <ParameterSlider disabled={props.disabled} paramName="c"  initValue={props.c.value}  min={props.c.min}  max={props.c.max}  callback={props.c.callback}/>
+            <ParameterSlider disabled={props.disabled} paramName="dt" initValue={props.dt.value} min={props.dt.min} max={props.dt.max} callback={props.dt.callback}/>
+            <ParameterSlider disabled={props.disabled} paramName="dx" initValue={props.dx.value} min={props.dx.min} max={props.dx.max} callback={props.dx.callback}/>
+            <ParameterSlider disabled={props.disabled} paramName="dy" initValue={props.dy.value} min={props.dy.min} max={props.dy.max} callback={props.dy.callback}/>
+        </SimulationParameterEditor>
+    )
+}
+
+function SimulationParameterEditor(props) {
     return (
         <table className="parameter-sliders">
             <tbody>
-                { parameterSlider({disabled: props.disabled, paramName: "c",  value: props.c.value,  min: props.c.min,  max: props.c.max,  onChange: props.onChangeC }) }
-                { parameterSlider({disabled: props.disabled, paramName: "dt", value: props.dt.value, min: props.dt.min, max: props.dt.max, onChange: props.onChangeDt}) }
-                { parameterSlider({disabled: props.disabled, paramName: "dx", value: props.dx.value, min: props.dx.min, max: props.dx.max, onChange: props.onChangeDx}) }
-                { parameterSlider({disabled: props.disabled, paramName: "dy", value: props.dy.value, min: props.dy.min, max: props.dy.max, onChange: props.onChangeDy}) }
+                {props.children}
             </tbody>
         </table>
     );
 }
 
-function parameterSlider(props) {
+function ParameterSlider(props) {
+    const [value, setValue] = useState(props.initValue);
+    const callback = (evt) => {
+        setValue(evt.target.value);
+        props.callback(evt.target.value);
+    }
+
     return (
         <tr>
             <th className="parameter-name-label">{props.paramName}</th>
             <th className="parameter-sliders-th">
-                <input disabled={props.disabled} type="range" value={props.value} className="parameter-slider" min={props.min} max={props.max} step="any" onChange={props.onChange}/>
+                <input disabled={props.disabled} type="range" value={value} className="parameter-slider" min={props.min} max={props.max} step="any" onChange={callback}/>
             </th>
         </tr>
     );
+}
+
+ParameterSlider.propTypes = {
+    initValue: PropTypes.number,
+    paramName: PropTypes.string,
+    min      : PropTypes.number,
+    max      : PropTypes.number,
+    callback : PropTypes.func
 }

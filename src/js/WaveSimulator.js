@@ -1,5 +1,5 @@
 import SimulationController from "./UI/SimulationController";
-import SimulationParameterEditor from "./UI/SimulationParameterEditor";
+import SliderTable from "./UI/SimulationParameterEditor";
 import Simulator from "./Simulator/Simulator";
 import VisSimulation from "./VisSimulation"
 import GaussianMixture from "./Functions/GaussianMixture";
@@ -15,21 +15,28 @@ import style from "./WaveSimulator.css";
 export default class WaveSimulator extends React.Component {
     constructor(props) {
         super(props);
+        this.__bindFunctions();
+        
         const minXY = props.minXY;
         const maxXY = props.maxXY;
-        const dx = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
-        const dy = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
         const elapsedTime = 0;
         const isPause = false;
-        const dt = new Parameter(0.01, 0.001, 0.1);
-        const c = new Parameter(1.0, 0.00001, 30);
-        this.state = {minXY, maxXY, c, dt, dx, dy, elapsedTime, isPause};
+        this.state = {minXY, maxXY, elapsedTime, isPause};
+        
+        
+        this.__dx = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
+        this.__dx.callback = this.onChangeDx;
+        this.__dy = new Parameter(0.5, 0.01, (maxXY[0] - minXY[0]) / 10);
+        this.__dy.callback = this.onChangeDy;
+        this.__dt = new Parameter(0.01, 0.001, 0.1);
+        this.__dt.callback = this.onChangeDt;
+        this.__c = new Parameter(1.0, 0.00001, 30);
+        this.__c.callback = this.onChangeC;
         this.__mainCanvasRef = React.createRef();
         this.__simulationFrameRef = React.createRef();
         this.__Simulator = new Simulator([[]]);
-        this.__initSimulation();
         
-        this.__bindFunctions();
+        this.__initSimulation();
     }
 
     ////////////////////  初期化系関数  ////////////////////////////
@@ -82,7 +89,7 @@ export default class WaveSimulator extends React.Component {
     __setInitConditionPoints() {
         if (this.__Simulator !== undefined && this.__Simulator.IsSimulationing) return false;
 
-        const points = Sampling(this.state.initCondition, this.state.minXY, this.state.maxXY, this.state.dx.value, this.state.dy.value);
+        const points = Sampling(this.state.initCondition, this.state.minXY, this.state.maxXY, this.__dx.value, this.__dy.value);
         this.__resoX = points[0].length;
         this.__resoY = points.length;
 
@@ -93,9 +100,9 @@ export default class WaveSimulator extends React.Component {
         for (let x = 0; x < this.__resoX; x++)
         {
             const idx = x * 3 + y * 3 * this.__resoX;
-            pointsArray[0 + idx] = this.state.minXY[0] + this.state.dx.value*x;
+            pointsArray[0 + idx] = this.state.minXY[0] + this.__dx.value*x;
             pointsArray[1 + idx] = points[y][x];
-            pointsArray[2 + idx] = this.state.minXY[1] + this.state.dy.value*y;
+            pointsArray[2 + idx] = this.state.minXY[1] + this.__dy.value*y;
         }
 
         if (this.__VisSimulation)   
@@ -127,9 +134,9 @@ export default class WaveSimulator extends React.Component {
         for (let x = 0; x < this.__resoX; x++) {
             const index = x + y * this.__resoX;
             const vectorsIdx = x * 3 + y * 3 * this.__resoX;
-            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.state.dx.value);
+            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.__dx.value);
             vectors[1 + vectorsIdx] = (nowPoints[index]); //高さはy座標に相当することに注意（zではない）
-            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.state.dy.value);
+            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.__dy.value);
         }
 
         this.__VisSimulation.setVertices(vectors, this.__resoX, this.__resoY);
@@ -140,18 +147,18 @@ export default class WaveSimulator extends React.Component {
 
         this.__Simulator.step();
         this.__updatePoints();
-        this.setState({elapsedTime: this.state.elapsedTime+this.state.dt.value});
+        this.setState({elapsedTime: this.state.elapsedTime+this.__dt.value});
 
         requestAnimationFrame(this.forwardTime); 
     }
 
     ///////////////  イベントハンドラ  ////////////////////
     handleStart() {
-        const isStarting = this.state.isPause ? this.__Simulator.restart() : this.__Simulator.start(this.state.c.value, this.state.dt.value, this.state.dx.value, this.state.dy.value);
+        const isStarting = this.state.isPause ? this.__Simulator.restart() : this.__Simulator.start(this.__c.value, this.__dt.value, this.__dx.value, this.__dy.value);
         if (!isStarting) return;
 
         this.__updatePoints();
-        this.setState({isPause: false, elapsedTime: this.state.elapsedTime+this.state.dt.value});
+        this.setState({isPause: false, elapsedTime: this.state.elapsedTime+this.__dt.value});
 
         requestAnimationFrame(this.forwardTime); 
     }
@@ -168,34 +175,26 @@ export default class WaveSimulator extends React.Component {
         this.__setInitConditionPoints();
     }
 
-    onChangeC(evt) {
-        const c = this.state.c;
-        c.value = Number(evt.target.value);
-        this.setState({c: c});
+    onChangeC(value) {
+        this.__c.value = Number(value);
     }
 
-    onChangeDt(evt) {
-        const dt = this.state.dt;
-        dt.value = Number(evt.target.value);
-        this.setState({dt: dt});
+    onChangeDt(value) {
+        this.__dt.value = Number(value);
     }
 
-    onChangeDx(evt) {
-        const dx = this.state.dx;
-        dx.value = Number(evt.target.value);
-        this.setState({dx: dx});
+    onChangeDx(value) {
+        this.__dx.value = Number(value);
         this.__setInitConditionPoints();
     }
 
-    onChangeDy(evt) {
-        const dy = this.state.dy;
-        dy.value = Number(evt.target.value);
-        this.setState({dy: dy});
+    onChangeDy(value) {
+        this.__dy.value = Number(value);
         this.__setInitConditionPoints();
     }
     //////////////////////////////////////////////////////
 
-    get isAcceptParamChange() {
+    get isRejectParamChange() {
         return this.state.isPause || this.__Simulator.IsSimulationing;
     }
 
@@ -210,17 +209,7 @@ export default class WaveSimulator extends React.Component {
                 <div className="simulation-frame">
                     <canvas id="main-canvas" ref={this.__mainCanvasRef}/>
                     <SimulationController start={this.handleStart} pause={this.handlePause} reset={this.handleReset}/>
-                    <SimulationParameterEditor 
-                        dx={this.state.dx} 
-                        dy={this.state.dy} 
-                        dt={this.state.dt} 
-                        c={this.state.c} 
-                        onChangeC ={this.onChangeC}
-                        onChangeDt={this.onChangeDt}
-                        onChangeDx={this.onChangeDx}
-                        onChangeDy={this.onChangeDy}
-                        disabled={this.isAcceptParamChange}
-                    />
+                    <SliderTable disabled={this.isRejectParamChange} c={this.__c} dt={this.__dt} dx={this.__dx} dy={this.__dy}/>
                 </div>
 
                 <div className="init-condition-frame">
