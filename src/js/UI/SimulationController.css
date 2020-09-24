@@ -1,0 +1,11 @@
+.simulation-controller-frame{
+    display: flex;
+    justify-content: space-between;
+    max-width: 50%;
+    margin-bottom: 2%;
+}
+
+.control-button{
+    width: 30%;
+    font-size: 100%;
+}
