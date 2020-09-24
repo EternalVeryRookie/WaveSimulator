@@ -142,6 +142,8 @@ export default class WaveSimulator extends React.Component {
     }
 
     handlePause() {
+        if (!this.__Simulator.IsSimulationing) return;
+        
         this.__Simulator.pause();
         this.setState({isPause: true});
     }
