@@ -33,9 +33,9 @@ export default class WaveSimulator extends React.Component {
         this.__c = new Parameter(1.0, 0.00001, 30);
         this.__c.callback = this.onChangeC;
         this.__mainCanvasRef = React.createRef();
-        this.__simulationFrameRef = React.createRef();
+        this.__simulationSceneContainerRef = React.createRef();
         this.__Simulator = new Simulator([[]]);
-        this.SimulationScene = new SimulationScene(this.__simulationFrameRef);
+        this.SimulationScene = new SimulationScene(this.__simulationSceneContainerRef);
         
         this.__initSimulation();
     }
@@ -89,14 +89,15 @@ export default class WaveSimulator extends React.Component {
         this.__Simulator.InitPoints = points;
 
         const pointsArray = new Float32Array(points.length * points[0].length * 3);
-        for (let y = 0; y < this.__resoY; y++)
-        for (let x = 0; x < this.__resoX; x++)
-        {
-            const idx = x * 3 + y * 3 * this.__resoX;
-            pointsArray[0 + idx] = this.state.minXY[0] + this.__dx.value*x;
-            pointsArray[1 + idx] = points[y][x];
-            pointsArray[2 + idx] = this.state.minXY[1] + this.__dy.value*y;
-        }
+
+        [...Array(this.__resoY).keys()].forEach(y =>
+            [...Array(this.__resoX).keys()].forEach(x => {
+                const idx = x * 3 + y * 3 * this.__resoX;
+                pointsArray[0 + idx] = this.state.minXY[0] + this.__dx.value*x;
+                pointsArray[1 + idx] = points[y][x];
+                pointsArray[2 + idx] = this.state.minXY[1] + this.__dy.value*y;
+            })    
+        );
 
         this.SimulationScene.setVertices(pointsArray, this.__resoX, this.__resoY);
     }
@@ -105,15 +106,17 @@ export default class WaveSimulator extends React.Component {
         const nowPoints = this.__Simulator.NowPoints;
         // シミュレーターは高さ情報しかもっていないため、レンダリング用にxy情報を生成する
         const vectors = new Float32Array(this.__resoY * this.__resoX * 3);
-        for (let y = 0; y < this.__resoY; y++)
-        for (let x = 0; x < this.__resoX; x++) {
-            const index = x + y * this.__resoX;
-            const vectorsIdx = x * 3 + y * 3 * this.__resoX;
-            vectors[0 + vectorsIdx] = (this.state.minXY[0] + x*this.__dx.value);
-            vectors[1 + vectorsIdx] = (nowPoints[index]); //高さはy座標に相当することに注意（zではない）
-            vectors[2 + vectorsIdx] = (this.state.minXY[1] + y*this.__dy.value);
-        }
 
+        [...Array(this.__resoY).keys()].forEach(y =>
+            [...Array(this.__resoX).keys()].forEach(x => {
+                const idx = x + y * this.__resoX;
+                const vectorsIdx = x * 3 + y * 3 * this.__resoX;
+                vectors[0 + vectorsIdx] = this.state.minXY[0] + this.__dx.value*x;
+                vectors[1 + vectorsIdx] = nowPoints[idx]; //高さはy座標に相当することに注意（zではない）
+                vectors[2 + vectorsIdx] = this.state.minXY[1] + this.__dy.value*y;
+            })    
+        );
+        
         this.SimulationScene.setVertices(vectors, this.__resoX, this.__resoY);
     }
 
@@ -175,7 +178,7 @@ export default class WaveSimulator extends React.Component {
 
     render() {
         return (
-            <div className="main-frame" ref={this.__simulationFrameRef}>
+            <div className="main-frame" ref={this.__simulationSceneContainerRef}>
                 <p>{this.state.elapsedTime}</p>
                 <div className="simulation-frame">
                     {this.SimulationScene.render()}
@@ -183,8 +186,7 @@ export default class WaveSimulator extends React.Component {
                     <SliderTable disabled={this.isRejectParamChange} c={this.__c} dt={this.__dt} dx={this.__dx} dy={this.__dy}/>
                 </div>
 
-                <div className="init-condition-frame">
-
+                <div className="edit-init-condition-frame">
                 </div>
             </div>
         )
