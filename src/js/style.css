@@ -1,7 +1,9 @@
 #app {
-    margin-top: 1vh;
     height: 70vh;
-    width: 70vh;
+    width: 100%;
+    min-width: 70vw;
+    min-height: 70vh;
+    max-width: 100vw;
+    max-height: 100vh;
     display: flex;
-    justify-content: flex-start;
 }

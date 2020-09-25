@@ -1,0 +1,14 @@
+.parameter-name-label {
+    text-align: left;
+    width: 3em;
+}
+
+.parameter-sliders-th {
+    text-align: left;
+    max-width: 100%;
+}
+
+.parameter-slider {
+    width: 100%;
+    max-width: 100%;
+}

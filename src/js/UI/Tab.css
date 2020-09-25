@@ -1,0 +1,49 @@
+.tab{
+    width: 100%;
+    min-width: 100%;
+}
+
+.tab-header {
+    width: 100%;
+    min-width: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.addable-header{
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.add-header-btn{
+    font-size: 3em;
+}
+
+.tab-header-content[isfocus="true"] {
+    background-color: black;
+    color: red;
+}
+
+.tab-header-content {
+    flex-basis: auto;
+    flex-grow: 100;
+    width: 12.5%;
+    line-height: 8vh;
+    font-size: 1vw;
+    text-align: center;
+    color: #565656;
+    border-bottom: 3px solid red;
+    background-color: #dddddd;
+    user-select: none;
+}
+
+.tab-content{
+    display: none;
+}
+
+.tab-content[isshow="true"]{
+    display: block;
+}
+

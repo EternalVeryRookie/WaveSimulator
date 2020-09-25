@@ -1,5 +1,6 @@
 import SimulationController from "./UI/SimulationController";
 import SliderTable from "./UI/SimulationParameterEditor";
+import InitialConditionsEditor from "./UI/InitialConditionsEditor";
 import Simulator from "./Simulator/Simulator";
 import SimulationScene from "./VisSimulation"
 import GaussianMixture from "./Functions/GaussianMixture";
@@ -9,7 +10,10 @@ import Parameter from "./lib/Parameter";
 import React from "react";
 import * as THREE from "./lib/three.module";
 
-import style from "./WaveSimulator.css";
+import "./WaveSimulator.css";
+
+const INIT_KERNEL_NUM = 7;
+
 
 //To Do stateを末端のコンポーネントに移動する
 export default class WaveSimulator extends React.Component {
@@ -44,21 +48,18 @@ export default class WaveSimulator extends React.Component {
 
     __initSimulation() {
         // 混合ガウス生成、サンプリング
-        const pai = Array(5).fill(5.0);
+        const pai = Array(INIT_KERNEL_NUM).fill(5.0);
         pai[3] = 7
-        const sigma = Array(5).fill(1.0);
+        const sigma = Array(INIT_KERNEL_NUM).fill(1.0);
         sigma[4] = 6;
         sigma[3] = 15;
         sigma[2] = 5;
         sigma[1] = 10;
-
-        const u = [ 
-            new THREE.Vector2(0.0, 0.0),
-            new THREE.Vector2(this.state.minXY[0]/2, this.state.minXY[1]/2),
-            new THREE.Vector2(this.state.maxXY[0]/2, this.state.maxXY[1]/2),
-            new THREE.Vector2(this.state.maxXY[0]/3, this.state.minXY[1]/4),
-            new THREE.Vector2(this.state.maxXY[0]/3, -this.state.minXY[1]/6),
-        ];
+        const u = [...Array(INIT_KERNEL_NUM).keys()].map(_ => new THREE.Vector2(0.0, 0.0));
+        u[0] = new THREE.Vector2(this.state.minXY[0]/2, this.state.minXY[1]/2);
+        u[1] = new THREE.Vector2(this.state.maxXY[0]/2, this.state.maxXY[1]/2);
+        u[2] = new THREE.Vector2(this.state.maxXY[0]/3, this.state.minXY[1]/4);
+        u[3] = new THREE.Vector2(this.state.maxXY[0]/3, -this.state.minXY[1]/6);
         
         const gaussianMix = GaussianMixture(pai, u, sigma);
         this.state.initCondition = gaussianMix;
@@ -180,15 +181,16 @@ export default class WaveSimulator extends React.Component {
 
     render() {
         return (
-            <div className="main-frame" ref={this.__simulationSceneContainerRef}>
-                <p>{this.state.elapsedTime}</p>
-                <div className="simulation-frame">
+            <div className="main-frame">
+                <div className="simulation-frame" ref={this.__simulationSceneContainerRef}>
+                    <p>{this.state.elapsedTime}</p>
                     {this.SimulationScene.render()}
                     <SimulationController start={this.handleStart} pause={this.handlePause} reset={this.handleReset}/>
                     <SliderTable disabled={this.isRejectParamChange} c={this.__c} dt={this.__dt} dx={this.__dx} dy={this.__dy}/>
                 </div>
 
                 <div className="edit-init-condition-frame">
+                    <InitialConditionsEditor initTabNum={INIT_KERNEL_NUM} initSelectIndex={0}/>
                 </div>
             </div>
         )

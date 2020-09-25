@@ -13,9 +13,11 @@ function createWebGLCanvasComponent() {
         const adjustCanvasAspect = () => {
             const canvas = renderer.domElement;
             const frame = props.simulationFrameRef.current;
-            const canvasSize = frame.clientWidth > frame.clientHeight ? frame.clientWidth : frame.clientHeight;
-            canvas.width = canvas.height = canvasSize;
-
+            const canvasSize = frame.clientWidth > frame.clientHeight ? frame.clientHeight : frame.clientWidth;
+            //canvas.width = canvas.height = canvasSize;
+            canvas.width = frame.clientWidth;
+            canvas.height = frame.clientHeight
+            
             renderer.setSize(canvas.width, canvas.height);
             props.setCameraAspect(canvas.width, canvas.height);
             renderer.render(props.scene, props.camera);

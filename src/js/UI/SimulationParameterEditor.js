@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import PropTypes from "prop-types";
-import Parameter from "../lib/Parameter";
+import ParameterSlider from "./ParameterSlider";
 
 import "./SimulationParameterEditor.css";
 
@@ -23,29 +22,4 @@ function SimulationParameterEditor(props) {
             </tbody>
         </table>
     );
-}
-
-function ParameterSlider(props) {
-    const [value, setValue] = useState(props.initValue);
-    const callback = (evt) => {
-        setValue(evt.target.value);
-        props.callback(evt.target.value);
-    }
-
-    return (
-        <tr>
-            <th className="parameter-name-label">{props.paramName}</th>
-            <th className="parameter-sliders-th">
-                <input disabled={props.disabled} type="range" value={value} className="parameter-slider" min={props.min} max={props.max} step="any" onChange={callback}/>
-            </th>
-        </tr>
-    );
-}
-
-ParameterSlider.propTypes = {
-    initValue: PropTypes.number,
-    paramName: PropTypes.string,
-    min      : PropTypes.number,
-    max      : PropTypes.number,
-    callback : PropTypes.func
 }
