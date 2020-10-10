@@ -3,11 +3,10 @@ import PropTypes from "prop-types";
 
 import "./ParameterSlider.css";
 
-
-export default function ParameterSlider(props) {
+const ParameterSlider = React.forwardRef( (props, ref) => {
     const [value, setValue] = useState(props.initValue);
     const callback = (evt) => {
-        setValue(evt.target.value);
+        setValue(Number(evt.target.value));
         if (props.callback)
             props.callback(evt.target.value);
     }
@@ -15,12 +14,15 @@ export default function ParameterSlider(props) {
     return (
         <tr>
             <th className="parameter-name-label">{props.paramName}</th>
+            <th className="parameter-name-label">{value.toFixed(2)}</th>
             <th className="parameter-sliders-th">
-                <input disabled={props.disabled} type="range" value={value} className="parameter-slider" min={props.min} max={props.max} step="any" onChange={callback}/>
+                <input ref={ref} disabled={props.disabled} type="range" value={value} className="parameter-slider" min={props.min} max={props.max} step="any" onChange={callback}/>
             </th>
         </tr>
     );
-}
+} );
+
+export default ParameterSlider;
 
 ParameterSlider.propTypes = {
     initValue: PropTypes.number,

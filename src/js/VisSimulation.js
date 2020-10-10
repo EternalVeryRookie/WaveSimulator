@@ -57,7 +57,7 @@ function createWebGLCanvasComponent() {
 
 
 const WebGLCanvas = createWebGLCanvasComponent();
-
+// sceneの変更によるレンダリングの発火どうする？
 
 export default class SimulationScene {
     constructor(canvasContainerRef) {

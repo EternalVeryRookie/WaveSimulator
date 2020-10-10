@@ -21,6 +21,18 @@
     font-size: 3em;
 }
 
+.delete-tab-content-btn {
+    margin-top: 2vh;
+    margin-bottom: 4vh;
+    width: 14%;
+    font-size: 1.5em;
+}
+
+.tab-header-content:hover[isfocus="false"] {
+    color: blue;
+    opacity: 0.7;
+}
+
 .tab-header-content[isfocus="true"] {
     background-color: black;
     color: red;
