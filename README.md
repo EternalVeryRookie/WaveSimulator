@@ -52,6 +52,7 @@ javascript <br>
 ### ライブラリ
 three.js r121<br>
 react.js 16.13.1  <br>
+※主要なもののみ記載。詳細は[こちら](https://github.com/EternalVeryRookie/WaveSimulator/blob/master/package.json)
 
 ### ビルドツール
 webpack 4.43.0
